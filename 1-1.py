@@ -20,23 +20,21 @@ X = train[:,0:2]
 Y = train[:,2:3]
 
 # Train with regularization for fixed iterations
-def train_model(my_lambda, my_iter):
-    lr = LogisticRegression(penalty='l2',C=1.0/my_lambda, solver='sag', max_iter=my_iter)
-    lr.fit(X, Y.flatten())
-    assert lr.n_iter_ <= my_iter
-    return lr.coef_
+def train_model(my_lambda, iterations):
+    norms = []
+    lr = LogisticRegression(penalty='l2',C=1.0/my_lambda, solver='sag', max_iter=1, warm_start=True)
+    for iteration in iterations:
+        lr.fit(X, Y.flatten())
+        norms += [np.linalg.norm(lr.coef_)]
+    return norms
 
 # Plot norm of weight vector vs number of iterations
-x = []
-y1 = []
-y2 = []
-for x_i in range(1, 50):
-    x += [x_i]
-    y1 += [np.linalg.norm(train_model(1e-50, x_i))]
-    y2 += [np.linalg.norm(train_model(1.0, x_i))]
+x = range(0, 50)
+y1 = train_model(1.0, x)
+y2 = train_model(1e-50, x)
 plt.figure()
-plt.plot(x, y1, label=r"$\lambda = 0$")
-plt.plot(x, y2, label=r"$\lambda = 1$")
+plt.plot(x, y2, label=r"$\lambda = 0$")
+plt.plot(x, y1, label=r"$\lambda = 1$")
 plt.xlabel('# iteration')
 plt.ylabel('norm of weights')
 plt.legend(loc="center right")
