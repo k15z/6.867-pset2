@@ -13,7 +13,8 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 
 # load data from csv files
-train = np.loadtxt('data/data1_train.csv')
+dataset_id = "1"
+train = np.loadtxt('data/data' + dataset_id + '_train.csv')
 X = train[:,0:2]
 Y = train[:,2:3]
 
@@ -30,7 +31,7 @@ y1 = []
 y2 = []
 for x_i in range(1, 50):
     x += [x_i]
-    y1 += [np.linalg.norm(train_model(1e-10, x_i))]
+    y1 += [np.linalg.norm(train_model(1e-50, x_i))]
     y2 += [np.linalg.norm(train_model(1.0, x_i))]
 plt.figure()
 plt.plot(x, y1, label=r"$\lambda = 0$")
