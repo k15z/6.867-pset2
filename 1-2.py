@@ -5,12 +5,6 @@ Homework 2: Question 1, Part 2
 Evaluate the effect of the choice of regularizer (L1 vs L2) and the value of λ 
 on (a) the weights, (b) the decision boundary and (c) the classification error 
 rate in each of the training data sets.
-
-Homework 2: Question 1, Part 3
-===============================================================================
-Use the training and validation sets to pick the best regularizer and value of 
-λ for each data set: data1, data2, data3, data4. Report the performance on the 
-test sets.
 """
 
 from __future__ import unicode_literals
@@ -33,7 +27,7 @@ x_val, y_val = val[:,0:2], val[:,2:3]
 
 # Train with regularization for fixed iterations
 def evaluate_model(penalty, my_lambda):
-    lr = LogisticRegression(penalty=penalty, C=1.0/my_lambda)
+    lr = LogisticRegression(penalty=penalty, C=1.0/my_lambda, intercept_scaling=1e3)
     lr.fit(x_train, y_train.flatten())
     err_train = 1.0 - lr.score(x_train, y_train)
     err_test = 1.0 - lr.score(x_test, y_test)
@@ -52,7 +46,7 @@ norm_weights_l2=[]
 err_trains_l2 = []
 err_tests_l2 = []
 err_vals_l2 = []
-for my_lambda in np.linspace(1e-50, 20.0, num=10):
+for my_lambda in np.linspace(1e-50, 20.0, num=20):
     x += [my_lambda]
     
     weights, predictLR, err_train, err_test, err_val = evaluate_model('l1', my_lambda)
