@@ -65,21 +65,20 @@ class quadSVM:
         sv_x = []
         sv_y = []
         sv_a = []
+        bias = 0.0
         for i in range(len(alpha)):
             if alpha[i] > 1e-5:
                 sv_x += [x[i]]
                 sv_y += [y[i]]
                 sv_a += [alpha[i]]
+
+                bias += y[i,0]
+                for j in range(len(alpha)):
+                    bias -= y[j,0] * alpha[j,0] * gram[i,j]
         self.sv_x = sv_x = np.array(sv_x)
         self.sv_y = sv_y = np.array(sv_y)
         self.sv_a = sv_a = np.array(sv_a)
-
-        self.bias = 0.0
-        # TODO: compute the bias term correctly. I implemented a lazy incorrect
-        # approximation of it below but we should do it properly.
-        estimate1 = 1.0 - max(self.predict(sv_x))
-        estimate2 = - 1.0 - min(self.predict(sv_x))
-        self.bias = (estimate1 + estimate2) / 2.0
+        self.bias = bias / len(sv_a)
 
     def score(self, x, y):
         return sum(self.predict(x) * y > 0) / float(x.shape[0])
