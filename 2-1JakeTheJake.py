@@ -14,6 +14,7 @@ problem with positive examples (2, 2), (2, 3) and negative examples (0, -1),
 
 import numpy as np
 import pylab as pl
+from sklearn.svm import SVC
 from cvxopt import matrix
 from cvxopt.solvers import qp
 from cvxopt.solvers import options
@@ -67,18 +68,19 @@ class quadSVM:
         sv_a = []
         bias = 0.0
         for i in range(len(alpha)):
-            if alpha[i] > 1e-5:
+            if alpha[i] > 1e-5: 
                 sv_x += [x[i]]
                 sv_y += [y[i]]
                 sv_a += [alpha[i]]
-
                 bias += y[i,0]
                 for j in range(len(alpha)):
-                    bias -= y[j,0] * alpha[j,0] * gram[i,j]
+                    bias -= y[j,0]*alpha[j]*gram[i,j]
+        
+        self.bias = bias/len(sv_a)
         self.sv_x = sv_x = np.array(sv_x)
         self.sv_y = sv_y = np.array(sv_y)
         self.sv_a = sv_a = np.array(sv_a)
-        self.bias = bias / len(sv_a)
+
 
     def score(self, x, y):
         return sum(self.predict(x) * y > 0) / float(x.shape[0])
@@ -97,18 +99,35 @@ class quadSVM:
 x = np.array([
     [2.0, 2.0], # SV1
     [2.0, 3.0], # SV2
+    [-2.0, 0.0], # SV3
+    [-4.0, -3.0], # SV4
+    [3.0, 1.0], # SV4
     [0.0, -1.0], # irrelevant
     [-3.0, -2.0]  # irrelevant
 ])
 y = np.array([
     [1.0],
     [1.0],
+    [1.0],
+    [1.0],
+    [-1.0],
     [-1.0],
     [-1.0]
 ])
-L = 1e-10
-svm = quadSVM(C=1/L)
+L = .00001
+svm = quadSVM(C=1.0/L, kernel=make_polynomial_kernel(3))
 svm.fit(x, y)
 print(svm.predict(x))
 plotDecisionBoundary(x, y, svm.predictOne, [0], title = 'quadSVM')
+
+print "\n"
+
+clf = SVC()
+clf.fit(x, y) 
+SVC(C=1/L, cache_size=200, class_weight=None, coef0=0.0,
+    decision_function_shape=None, degree=4, gamma='auto', kernel='rbf',
+    max_iter=-1, probability=False, random_state=None, shrinking=True,
+    tol=0.001, verbose=False)
+print(clf.decision_function(x))
+
 pl.show()
