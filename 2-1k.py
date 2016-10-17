@@ -14,8 +14,8 @@ problem with positive examples (2, 2), (2, 3) and negative examples (0, -1),
 
 import numpy as np
 import pylab as pl
-from sklearn.svm import SVC
 from cvxopt import matrix
+from sklearn.svm import SVC
 from cvxopt.solvers import qp
 from cvxopt.solvers import options
 from plotBoundary import plotDecisionBoundary
@@ -31,7 +31,7 @@ def make_gaussian_kernel(sigma):
 
 def make_polynomial_kernel(degree):
     def polynomial_kernel(x_a, x_b):
-        return x_a.dot(x_b)**degree
+        return np.power(x_a.dot(x_b),degree)
     return polynomial_kernel
 
 def gram_matrix(x, kernel):
@@ -68,19 +68,19 @@ class quadSVM:
         sv_a = []
         bias = 0.0
         for i in range(len(alpha)):
-            if alpha[i] > 1e-5: 
+            if max(alpha)*1e-6 < alpha[i] < self._C:
                 sv_x += [x[i]]
                 sv_y += [y[i]]
                 sv_a += [alpha[i]]
+
                 bias += y[i,0]
                 for j in range(len(alpha)):
-                    bias -= y[j,0]*alpha[j]*gram[i,j]
-        
-        self.bias = bias/len(sv_a)
+                    bias -= y[j,0] * alpha[j,0] * gram[i,j]
         self.sv_x = sv_x = np.array(sv_x)
         self.sv_y = sv_y = np.array(sv_y)
         self.sv_a = sv_a = np.array(sv_a)
-
+        self.bias = bias / len(sv_a)
+        print(len(sv_x))
 
     def score(self, x, y):
         return sum(self.predict(x) * y > 0) / float(x.shape[0])
@@ -97,13 +97,13 @@ class quadSVM:
         return self.predict(np.array([x]))
 
 x = np.array([
-    [2.0, 2.0], # SV1
-    [2.0, 3.0], # SV2
-    [-2.0, 0.0], # SV3
-    [-4.0, -3.0], # SV4
-    [3.0, 1.0], # SV4
-    [0.0, -1.0], # irrelevant
-    [-3.0, -2.0]  # irrelevant
+    [2.0, 2.0],
+    [2.0, 3.0],
+    [-2.0, 0.0],
+    [-4.0, -3.0],
+    [3.0, 1.0],
+    [0.0, -1.0],
+    [-3.0, -2.0]
 ])
 y = np.array([
     [1.0],
@@ -114,16 +114,16 @@ y = np.array([
     [-1.0],
     [-1.0]
 ])
-L = .00001
-svm = quadSVM(C=1.0/L, kernel=make_polynomial_kernel(3))
+C = 1.0/.00001
+svm = quadSVM(C=C,kernel=make_polynomial_kernel(3))
 svm.fit(x, y)
-print(svm.predict(x))
-plotDecisionBoundary(x, y, svm.predictOne, [0], title = 'quadSVM')
+print("a", svm.predict(x))
+plotDecisionBoundary(x, y, svm.predictOne, [-0.7, 0.0, 0.7], title = 'quadSVM')
 
-print("\n")
-
-clf = SVC()
-clf.fit(x, y) 
-print(clf.decision_function(x))
-
+clf = SVC(C=C, kernel='poly', degree=3)
+clf.fit(x, y)
+def predictOne(x_i):
+    return clf.decision_function(np.array([x_i]))
+print("b", clf.decision_function(x))
+plotDecisionBoundary(x, y, predictOne, [-0.5, 0.0, 0.5], title = 'sklearnSVM')
 pl.show()
