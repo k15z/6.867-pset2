@@ -12,52 +12,89 @@ problem with positive examples (2, 2), (2, 3) and negative examples (0, -1),
 (-3, -2). Which examples are support vectors?
 """
 
-import cvxopt
 import numpy as np
+import pylab as pl
+from cvxopt import matrix
+from cvxopt.solvers import qp
+from cvxopt.solvers import options
 from plotBoundary import plotDecisionBoundary
+options['show_progress'] = False
+
+def linear_kernel(x_a, x_b):
+    return np.dot(x_a, x_b)
+
+def make_gaussian_kernel(sigma):
+    def gaussian_kernel(x_a, x_b):
+        return np.exp(-np.linalg.norm(x_a - x_b)/(2.0 * sigma**2))
+    return gaussian_kernel
+
+def make_polynomial_kernel(degree):
+    def polynomial_kernel(x_a, x_b):
+        return x_a.dot(x_b)**degree
+    return polynomial_kernel
+
+def gram_matrix(x, kernel):
+    num_samples, num_features = x.shape
+    gram = np.zeros((num_samples, num_samples))
+    for i, x_i in enumerate(x):
+        for j, x_j in enumerate(x):
+            gram[i,j] = kernel(x_i, x_j)
+    return gram
 
 class quadSVM:
-    def fit(self, x, y, C=0):
-        num_samples, input_dims = x.shape
-        assert y.shape[0] == num_samples
-        
-        P = cvxopt.matrix(np.outer(y, y) * self._gram_matrix(x))
-        q = cvxopt.matrix(-np.ones(num_samples))
-        G = cvxopt.matrix(np.vstack((-np.eye(num_samples), np.eye(num_samples))))
-        h = cvxopt.matrix(np.hstack((np.zeros(num_samples), np.ones(num_samples) * C)))
-        A = cvxopt.matrix(y, (1, num_samples))
-        b = cvxopt.matrix(0.0)
-        
-        alpha = np.array(cvxopt.solvers.qp(P, q, G, h, A, b)['x'])
-        
-        weight = np.sum(x * (alpha * y), axis=0)
-        self.weight = weight
-        
-        # TODO: Fix the bias term...
-        bias = y - self._gram_matrix(x).dot(alpha * y)
-        bias = np.sum(bias) / (num_samples)
-        self.bias = bias
-        
-        return (alpha, weight)
+    def __init__(self, C=1.0/1e-8, kernel=linear_kernel):
+        self._C = C
+        self._kernel = kernel
+
+    def fit(self, x, y):
+        assert x.shape[0] == y.shape[0]
+        num_samples, num_features = x.shape
+
+        C = self._C
+        gram = gram_matrix(x, self._kernel)
+
+        P = matrix(np.outer(y, y) * gram)
+        q = matrix(-np.ones(num_samples))
+        G = matrix(np.vstack((-np.eye(num_samples), np.eye(num_samples))))
+        h = matrix(np.hstack((np.zeros(num_samples), np.ones(num_samples) * C)))
+        A = matrix(y, (1, num_samples))
+        b = matrix(0.0)
+
+        alpha = np.array(qp(P, q, G, h, A, b)['x'])
+
+        sv_x = []
+        sv_y = []
+        sv_a = []
+        for i in range(len(alpha)):
+            if alpha[i] > 1e-5:
+                sv_x += [x[i]]
+                sv_y += [y[i]]
+                sv_a += [alpha[i]]
+        self.sv_x = sv_x = np.array(sv_x)
+        self.sv_y = sv_y = np.array(sv_y)
+        self.sv_a = sv_a = np.array(sv_a)
+
+        self.bias = 0.0
+        # TODO: compute the bias term correctly. I implemented a lazy incorrect
+        # approximation of it below but we should do it properly.
+        estimate1 = 1.0 - max(self.predict(sv_x))
+        estimate2 = - 1.0 - min(self.predict(sv_x))
+        self.bias = (estimate1 + estimate2) / 2.0
+
+    def score(self, x, y):
+        return sum(self.predict(x) * y > 0) / float(x.shape[0])
 
     def predict(self, x):
-        return x.dot(weight) + self.bias
+        num_samples, num_features = x.shape
+        y = np.zeros((num_samples,1))
+        for i, x_i in enumerate(x):
+            for j, sv_x_i in enumerate(self.sv_x):
+                y[i] += self.sv_a[j] * self.sv_y[j] * self._kernel(x_i, sv_x_i)
+        return y + self.bias
 
     def predictOne(self, x):
         return self.predict(np.array([x]))
 
-    def _kernel(self, x1, x2):
-        return np.dot(x1, x2)
-    
-    def _gram_matrix(self, X):
-        n_samples, n_features = X.shape
-        K = np.zeros((n_samples, n_samples))
-        for i, x_i in enumerate(X):
-            for j, x_j in enumerate(X):
-                K[i, j] = self._kernel(x_i, x_j)
-        return K
-
-svm = quadSVM()
 x = np.array([
     [2.0, 2.0], # SV1
     [2.0, 3.0], # SV2
@@ -71,7 +108,8 @@ y = np.array([
     [-1.0]
 ])
 L = 1e-10
-alpha, weight = svm.fit(x, y, 1/L)
-
+svm = quadSVM(C=1/L)
+svm.fit(x, y)
 print(svm.predict(x))
 plotDecisionBoundary(x, y, svm.predictOne, [0], title = 'quadSVM')
+pl.show()
