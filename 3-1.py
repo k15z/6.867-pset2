@@ -35,48 +35,36 @@ def gram_matrix(x, kernel):
     return gram
 
 class pegasosSVM:
-    def __init__(self, C=1.0/1e-8, kernel=linear_kernel):
-        self._C = C
+    def __init__(self, L=1.0, kernel=linear_kernel):
+        self._L = L
         self._kernel = kernel
 
     def fit(self, x, y):
         assert x.shape[0] == y.shape[0]
         num_samples, num_features = x.shape
 
-        C = self._C
+        L = self._L
         gram = gram_matrix(x, self._kernel)
         
         t = 0.0
         alpha = np.zeros(num_samples)
-        for epoch in range(1000000):
+        for epoch in range(1000):
             for i in range(num_samples):
                 t += 1.0
-                lr = C / t
+                lr = 1.0 / (t * L)
                 if y[i,0] * alpha.dot(gram[:,i]) < 1.0:
-                    alpha[i] = (1.0 - lr / C) * alpha[i] + lr * y[i,0]
+                    alpha[i] = (1.0 - lr * L) * alpha[i] + lr * y[i,0]
                 else:
-                    alpha[i] = (1.0 - lr / C) * alpha[i]
-        print(alpha)
-        # [[  1.53846150e-01][  3.16686148e-09][  1.53846153e-01][  2.94624292e-10]]
+                    alpha[i] = (1.0 - lr * L) * alpha[i]
+        self.sv_x = x
+        self.sv_y = y
+        self.sv_a = alpha
 
-        sv_x = []
-        sv_y = []
-        sv_a = []
         bias = 0.0
         for i in range(len(alpha)):
-            if True or max(alpha)*1e-6 < alpha[i] < self._C:
-                sv_x += [x[i]]
-                sv_y += [y[i]]
-                sv_a += [alpha[i]]
-
-                bias += y[i,0]
-                for j in range(len(alpha)):
-                    bias -= y[j,0] * alpha[j] * gram[i,j]
-        self.sv_x = sv_x = np.array(sv_x)
-        self.sv_y = sv_y = np.array(sv_y)
-        self.sv_a = sv_a = np.array(sv_a)
-        self.bias = bias / len(sv_a)
-        print(len(sv_x))
+            bias += y[i,0]
+            bias -= alpha.dot(gram[:,i])
+        self.bias = bias / len(alpha)
 
     def score(self, x, y):
         return sum(self.predict(x) * y > 0) / float(x.shape[0])
@@ -86,33 +74,33 @@ class pegasosSVM:
         y = np.zeros((num_samples,1))
         for i, x_i in enumerate(x):
             for j, sv_x_i in enumerate(self.sv_x):
-                y[i] += self.sv_a[j] * self.sv_y[j] * self._kernel(x_i, sv_x_i)
+                y[i] += self.sv_a[j] * self._kernel(x_i, sv_x_i)
         return y + self.bias
 
     def predictOne(self, x):
         return self.predict(np.array([x]))
 
-x = np.array([
-    (2, 2),
-    (2, 3),
-    (0, -1),
-    (-3, -2)
-])
-y = np.array([
-    [1.0],
-    [1.0],
-    [-1.0],
-    [-1.0]
-])
-C = 1.0
-svm = pegasosSVM(C=C)
-svm.fit(x, y)
-print("b", svm.predict(x))
-plotDecisionBoundary(x, y, svm.predictOne, [0.0], title = 'quadSVM')
+dataset_id = "1"
+train = np.loadtxt('data/data' + dataset_id + '_train.csv')
+x_train, y_train = train[:,0:2], train[:,2:3]
+test = np.loadtxt('data/data' + dataset_id + '_test.csv')
+x_test, y_test = test[:,0:2], test[:,2:3]
+val = np.loadtxt('data/data' + dataset_id + '_validate.csv')
+x_val, y_val = val[:,0:2], val[:,2:3]
 
-clf = SVC(C=C, kernel='linear')
-clf.fit(x, y.flatten())
+L = 1.0
+svm = pegasosSVM(L=L, kernel=make_gaussian_kernel(1.0))
+svm.fit(x_train, y_train)
+print("pegasosSVM val", 1.0 - svm.score(x_val, y_val))
+print("pegasosSVM test", 1.0 - svm.score(x_test, y_test))
+plotDecisionBoundary(x_train, y_train, svm.predictOne, [0.0], title = 'quadSVM')
+
+clf = SVC(C=1.0, kernel='rbf', gamma=1.0)
+clf.fit(x_train, y_train)
 def predictOne(x_i):
     return clf.decision_function(np.array([x_i]))
-plotDecisionBoundary(x, y, predictOne, [0.0], title = 'sklearnSVM')
+print("sklearnSVM val", 1.0 - svm.score(x_val, y_val))
+print("sklearnSVM test", 1.0 - svm.score(x_test, y_test))
+plotDecisionBoundary(x_train, y_train, predictOne, [0.0], title = 'sklearnSVM')
+
 pl.show()
