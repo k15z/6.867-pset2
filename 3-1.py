@@ -1,20 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-Homework 2: Question 2, Part 2
+Homework 2: Question 3, Part 1
 ===============================================================================
-Test your implementation on the 2D datasets. Set C=1 and report/explain your 
-decision boundary and classification error rate on the training and validation 
-sets. We provide some skeleton code in svm test.py.
+Implement a kernelized version of the Pegasos algorithm. It should take in a 
+Gram matrix and should should output the support vector values, α, or a function
+that makes a prediction for a new input. In this version, you do not need to 
+add a bias term.
 """
 
 import numpy as np
 import pylab as pl
-from cvxopt import matrix
 from sklearn.svm import SVC
-from cvxopt.solvers import qp
-from cvxopt.solvers import options
 from plotBoundary import plotDecisionBoundary
-options['show_progress'] = False
 
 def linear_kernel(x_a, x_b):
     return np.dot(x_a, x_b)
@@ -37,7 +34,7 @@ def gram_matrix(x, kernel):
             gram[i,j] = kernel(x_i, x_j)
     return gram
 
-class quadSVM:
+class pegasosSVM:
     def __init__(self, C=1.0/1e-8, kernel=linear_kernel):
         self._C = C
         self._kernel = kernel
@@ -48,29 +45,33 @@ class quadSVM:
 
         C = self._C
         gram = gram_matrix(x, self._kernel)
-
-        P = matrix(np.outer(y, y) * gram)
-        q = matrix(-np.ones(num_samples))
-        G = matrix(np.vstack((-np.eye(num_samples), np.eye(num_samples))))
-        h = matrix(np.hstack((np.zeros(num_samples), np.ones(num_samples) * C)))
-        A = matrix(y, (1, num_samples))
-        b = matrix(0.0)
-
-        alpha = np.array(qp(P, q, G, h, A, b)['x'])
+        
+        t = 0.0
+        alpha = np.zeros(num_samples)
+        for epoch in range(1000000):
+            for i in range(num_samples):
+                t += 1.0
+                lr = C / t
+                if y[i,0] * alpha.dot(gram[:,i]) < 1.0:
+                    alpha[i] = (1.0 - lr / C) * alpha[i] + lr * y[i,0]
+                else:
+                    alpha[i] = (1.0 - lr / C) * alpha[i]
+        print(alpha)
+        # [[  1.53846150e-01][  3.16686148e-09][  1.53846153e-01][  2.94624292e-10]]
 
         sv_x = []
         sv_y = []
         sv_a = []
         bias = 0.0
         for i in range(len(alpha)):
-            if max(alpha)*1e-6 < alpha[i] < self._C:
+            if True or max(alpha)*1e-6 < alpha[i] < self._C:
                 sv_x += [x[i]]
                 sv_y += [y[i]]
                 sv_a += [alpha[i]]
 
                 bias += y[i,0]
                 for j in range(len(alpha)):
-                    bias -= y[j,0] * alpha[j,0] * gram[i,j]
+                    bias -= y[j,0] * alpha[j] * gram[i,j]
         self.sv_x = sv_x = np.array(sv_x)
         self.sv_y = sv_y = np.array(sv_y)
         self.sv_a = sv_a = np.array(sv_a)
@@ -91,26 +92,27 @@ class quadSVM:
     def predictOne(self, x):
         return self.predict(np.array([x]))
 
-dataset_id = "1"
-train = np.loadtxt('data/data' + dataset_id + '_train.csv')
-x_train, y_train = train[:,0:2], train[:,2:3]
-test = np.loadtxt('data/data' + dataset_id + '_test.csv')
-x_test, y_test = test[:,0:2], test[:,2:3]
-val = np.loadtxt('data/data' + dataset_id + '_validate.csv')
-x_val, y_val = val[:,0:2], val[:,2:3]
+x = np.array([
+    (2, 2),
+    (2, 3),
+    (0, -1),
+    (-3, -2)
+])
+y = np.array([
+    [1.0],
+    [1.0],
+    [-1.0],
+    [-1.0]
+])
+C = 1.0
+svm = pegasosSVM(C=C)
+svm.fit(x, y)
+print("b", svm.predict(x))
+plotDecisionBoundary(x, y, svm.predictOne, [0.0], title = 'quadSVM')
 
-svm = quadSVM(C=1.0, kernel=make_gaussian_kernel(1.0))
-svm.fit(x_train, y_train)
-print("quadSVM val", 1.0 - svm.score(x_val, y_val))
-print("quadSVM test", 1.0 - svm.score(x_test, y_test))
-plotDecisionBoundary(x_train, y_train, svm.predictOne, [0.0], title = 'quadSVM')
-
-clf = SVC(C=1.0, kernel='rbf', gamma=1.0)
-clf.fit(x_train, y_train)
+clf = SVC(C=C, kernel='linear')
+clf.fit(x, y.flatten())
 def predictOne(x_i):
     return clf.decision_function(np.array([x_i]))
-print("sklearnSVM val", 1.0 - svm.score(x_val, y_val))
-print("sklearnSVM test", 1.0 - svm.score(x_test, y_test))
-plotDecisionBoundary(x_train, y_train, predictOne, [0.0], title = 'sklearnSVM')
-
+plotDecisionBoundary(x, y, predictOne, [0.0], title = 'sklearnSVM')
 pl.show()
