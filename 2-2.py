@@ -1,15 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Homework 2: Question 2, Part 1
+Homework 2: Question 2, Part 2
 ===============================================================================
-Implement the dual form of linear SVMs with slack variables. Please do not use 
-the built-in SVM implementation in Matlab or sklearn. Instead, write a program 
-that takes data as input, converts it to the appropriate objective function and 
-constraints, and then calls a quadratic programming package to solve it.
-
-Show in your report the constraints and objective that you generate for the 2D 
-problem with positive examples (2, 2), (2, 3) and negative examples (0, -1), 
-(-3, -2). Which examples are support vectors?
+Test your implementation on the 2D datasets. Set C=1 and report/explain your 
+decision boundary and classification error rate on the training and validation 
+sets. We provide some skeleton code in svm test.py.
 """
 
 import numpy as np
@@ -96,34 +91,24 @@ class quadSVM:
     def predictOne(self, x):
         return self.predict(np.array([x]))
 
-x = np.array([
-    [2.0, 2.0],
-    [2.0, 3.0],
-    [-2.0, 0.0],
-    [-4.0, -3.0],
-    [3.0, 1.0],
-    [0.0, -1.0],
-    [-3.0, -2.0]
-])
-y = np.array([
-    [1.0],
-    [1.0],
-    [1.0],
-    [1.0],
-    [-1.0],
-    [-1.0],
-    [-1.0]
-])
-C = 1.0/.00001
-svm = quadSVM(C=C,kernel=make_polynomial_kernel(3))
-svm.fit(x, y)
-print("a", svm.predict(x))
-plotDecisionBoundary(x, y, svm.predictOne, [-0.7, 0.0, 0.7], title = 'quadSVM')
+dataset_id = "1"
+train = np.loadtxt('data/data' + dataset_id + '_train.csv')
+x_train, y_train = train[:,0:2], train[:,2:3]
+test = np.loadtxt('data/data' + dataset_id + '_test.csv')
+x_test, y_test = test[:,0:2], test[:,2:3]
+val = np.loadtxt('data/data' + dataset_id + '_validate.csv')
+x_val, y_val = val[:,0:2], val[:,2:3]
 
-clf = SVC(C=C, kernel='poly', degree=3)
-clf.fit(x, y)
+svm = quadSVM(C=1.0, kernel=make_gaussian_kernel(1.0))
+svm.fit(x_train, y_train)
+print("quadSVM val", 1.0 - svm.score(x_val, y_val))
+print("quadSVM test", 1.0 - svm.score(x_test, y_test))
+plotDecisionBoundary(x_train, y_train, svm.predictOne, [0.0], title = 'quadSVM')
+
+clf = SVC(C=1.0, kernel='rbf', gamma=1.0)
+clf.fit(x_train, y_train)
 def predictOne(x_i):
     return clf.decision_function(np.array([x_i]))
-print("b", clf.decision_function(x))
-plotDecisionBoundary(x, y, predictOne, [-0.5, 0.0, 0.5], title = 'sklearnSVM')
-pl.show()
+print("sklearnSVM val", 1.0 - svm.score(x_val, y_val))
+print("sklearnSVM test", 1.0 - svm.score(x_test, y_test))
+plotDecisionBoundary(x_train, y_train, predictOne, [0.0], title = 'sklearnSVM')
