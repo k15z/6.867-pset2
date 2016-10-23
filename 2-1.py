@@ -41,7 +41,7 @@ print("a", svm.predict(x))
 plotDecisionBoundary(x, y, svm.predictOne, [0.0], title = 'quadSVM')
 
 clf = SVC(C=C, kernel='linear')
-clf.fit(x, y)
+clf.fit(x, y.flatten())
 def predictOne(x_i):
     return clf.decision_function(np.array([x_i]))
 print("b", clf.decision_function(x))
