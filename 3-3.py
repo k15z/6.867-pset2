@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Homework 2: Question 3, Part 1
+Homework 2: Question 3, Part 3
 ===============================================================================
 Implement a kernelized version of the Pegasos algorithm. It should take in a 
 Gram matrix and should should output the support vector values, α, or a function

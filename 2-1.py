@@ -38,12 +38,12 @@ C = 1000.0
 svm = QuadSVM(C=C)
 svm.fit(x, y.flatten())
 print("a", svm.predict(x))
-plotDecisionBoundary(x, y, svm.predictOne, [0.0], title = 'quadSVM')
+plotDecisionBoundary(x, y, svm.predictOne, [-1, 0, 1], title = 'quadSVM')
 
 clf = SVC(C=C, kernel='linear')
 clf.fit(x, y.flatten())
 def predictOne(x_i):
     return clf.decision_function(np.array([x_i]))
 print("b", clf.decision_function(x))
-plotDecisionBoundary(x, y, predictOne, [0.0], title = 'sklearnSVM')
+plotDecisionBoundary(x, y, predictOne, [-1, 0, 1], title = 'sklearnSVM')
 pl.show()
