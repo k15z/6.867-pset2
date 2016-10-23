@@ -62,6 +62,7 @@ class QuadSVM:
         self.sv_y = sv_y = np.array(sv_y)
         self.sv_a = sv_a = np.array(sv_a)
         self.bias = bias / len(sv_a)
+        print(len(sv_x))
 
     def score(self, x, y):
         return sum(self.predict(x) * y > 0) / float(x.shape[0])

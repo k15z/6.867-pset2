@@ -16,9 +16,9 @@ from plotBoundary import plotDecisionBoundary
 def linear_kernel(x_a, x_b):
     return np.dot(x_a, x_b)
 
-def make_gaussian_kernel(sigma):
+def make_gaussian_kernel(gamma):
     def gaussian_kernel(x_a, x_b):
-        return np.exp(-np.linalg.norm(x_a - x_b)/(2.0 * sigma**2))
+        return np.exp(-np.linalg.norm(x_a - x_b)*gamma)
     return gaussian_kernel
 
 def make_polynomial_kernel(degree):
@@ -59,12 +59,8 @@ class pegasosSVM:
         self.sv_x = x
         self.sv_y = y
         self.sv_a = alpha
-
-        bias = 0.0
-        for i in range(len(alpha)):
-            bias += y[i,0]
-            bias -= alpha.dot(gram[:,i])
-        self.bias = bias / len(alpha)
+        
+        print("sv", sum(abs(alpha) > max(alpha)*1e-6))
 
     def score(self, x, y):
         return sum(self.predict(x) * y > 0) / float(x.shape[0])
@@ -75,8 +71,8 @@ class pegasosSVM:
         for i, x_i in enumerate(x):
             for j, sv_x_i in enumerate(self.sv_x):
                 y[i] += self.sv_a[j] * self._kernel(x_i, sv_x_i)
-        return y + self.bias
-
+        return y
+        
     def predictOne(self, x):
         return self.predict(np.array([x]))
 
@@ -88,19 +84,16 @@ x_test, y_test = test[:,0:2], test[:,2:3]
 val = np.loadtxt('data/data' + dataset_id + '_validate.csv')
 x_val, y_val = val[:,0:2], val[:,2:3]
 
-L = 1.0
-svm = pegasosSVM(L=L, kernel=make_gaussian_kernel(1.0))
-svm.fit(x_train, y_train)
-print("pegasosSVM val", 1.0 - svm.score(x_val, y_val))
-print("pegasosSVM test", 1.0 - svm.score(x_test, y_test))
-plotDecisionBoundary(x_train, y_train, svm.predictOne, [0.0], title = 'quadSVM')
-
-clf = SVC(C=1.0, kernel='rbf', gamma=1.0)
-clf.fit(x_train, y_train)
-def predictOne(x_i):
-    return clf.decision_function(np.array([x_i]))
-print("sklearnSVM val", 1.0 - svm.score(x_val, y_val))
-print("sklearnSVM test", 1.0 - svm.score(x_test, y_test))
-plotDecisionBoundary(x_train, y_train, predictOne, [0.0], title = 'sklearnSVM')
+x_axis = [2**i for i in range(-5,5+1)]
+y_axis = []
+for gamma in x_axis:
+#    svm = pegasosSVM(L=0.02, kernel=make_gaussian_kernel(gamma))
+    svm = SVC(C=0.1,gamma=gamma)
+    svm.fit(x_train, y_train.flatten())
+    print(sum(svm.n_support_))
+    print("pegasosSVM val", 1.0 - svm.score(x_val, y_val))
+    print("pegasosSVM test", 1.0 - svm.score(x_test, y_test))
+    print("")
+#    plotDecisionBoundary(x_train, y_train, svm.predictOne, [-1,0,1], title = 'pegasosSVM - ' + str(gamma))
 
 pl.show()

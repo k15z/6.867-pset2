@@ -25,7 +25,7 @@ x_test, y_test = test[:,0:2], test[:,2:3]
 val = np.loadtxt('data/data' + dataset_id + '_validate.csv')
 x_val, y_val = val[:,0:2], val[:,2:3]
 
-C = 0.01
+C = 1.0
 svm = QuadSVM(C=C, kernel=make_gaussian_kernel(1.0))
 svm.fit(x_train, y_train.flatten())
 print("quadSVM train", 1.0 - svm.score(x_train, y_train.flatten()))
