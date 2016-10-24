@@ -7,9 +7,9 @@ options['show_progress'] = False
 def linear_kernel(x_a, x_b):
     return np.dot(x_a, x_b)
 
-def make_gaussian_kernel(sigma):
+def make_gaussian_kernel(gamma):
     def gaussian_kernel(x_a, x_b):
-        return np.exp(-np.linalg.norm(x_a - x_b)/(2.0 * sigma**2))
+        return np.exp(-np.linalg.norm(x_a - x_b)*gamma)
     return gaussian_kernel
 
 def make_polynomial_kernel(degree):

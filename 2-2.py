@@ -17,7 +17,7 @@ from plotBoundary import plotDecisionBoundary
 from quadSVM import QuadSVM, make_gaussian_kernel
 options['show_progress'] = False
 
-dataset_id = "3"
+dataset_id = "2"
 train = np.loadtxt('data/data' + dataset_id + '_train.csv')
 x_train, y_train = train[:,0:2], train[:,2:3]
 test = np.loadtxt('data/data' + dataset_id + '_test.csv')

@@ -38,33 +38,38 @@ def load_data(pos, neg, normalize=False):
     
     return (x_train, y_train, x_val, y_val, x_test, y_test)
 
-x_train, y_train, x_val, y_val, x_test, y_test = load_data("02468","13579")
+x_train, y_train, x_val, y_val, x_test, y_test = load_data("1","7", True)
 
-# sklearn.LR
-lr = LogisticRegression(C=1.0)
-lr.fit(x_train, y_train)
-print("LR Train", lr.score(x_train, y_train))
-print("LR Test", lr.score(x_test, y_test))
-print("LR Val", lr.score(x_val, y_val))
-print("")
+dx = 10
+dy = 10
+cs = np.linspace(1e-8, 20.0, num=dx)
+gammas = np.linspace(1e-8, 20.0, num=dy)
+train_acc = np.zeros((dy, dx))
+test_acc = np.zeros((dy, dx))
+val_acc = np.zeros((dy, dx))
 
-# sklearn.SVM
-svm = SVC(C=1.0, kernel='linear')
-svm.fit(x_train, y_train)
-def predictOne(x_i):
-    return svm.decision_function(np.array([x_i]))
-print("SVM Train", svm.score(x_train, y_train))
-print("SVM Test", svm.score(x_test, y_test))
-print("SVM Val", svm.score(x_val, y_val))
-print("")
+for i, C in enumerate(cs):
+    for j, gamma in enumerate(gammas):
+        svm = QuadSVM(C=C, kernel=make_gaussian_kernel(gamma))
+        svm.fit(x_train, y_train)
 
-# kf.QuadSVM
-svm = QuadSVM(C=1.0)
-svm.fit(x_train, y_train)
-print("SVM Train", svm.score(x_train, y_train))
-print("SVM Test", svm.score(x_test, y_test))
-print("SVM Val", svm.score(x_val, y_val))
-print("")
+        train_acc[j][i] = svm.score(x_train, y_train)
+        test_acc[j][i] = svm.score(x_test, y_test)
+        val_acc[j][i] = svm.score(x_val, y_val)
+
+        print(i, j, C, gamma)
+        print("SVM Train", svm.score(x_train, y_train))
+        print("SVM Test", svm.score(x_test, y_test))
+        print("SVM Val", svm.score(x_val, y_val))
+        print("")
+
+plt.figure()
+cs, gammas = np.meshgrid(cs, gammas)
+cs = plt.contourf(cs, gammas, test_acc)
+plt.xlabel("C")
+plt.ylabel("gamma")
+plt.colorbar(cs)
+plt.show()
 
 """
 result = svm.predict(x_test) * y_test > 0
