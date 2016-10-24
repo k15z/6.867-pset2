@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import time
 import numpy as np
 from sklearn.svm import SVC
 import matplotlib.pyplot as plt
@@ -39,52 +40,33 @@ def load_data(pos, neg, normalize=False):
     
     return (x_train, y_train, x_val, y_val, x_test, y_test)
 
-x_train, y_train, x_val, y_val, x_test, y_test = load_data("3","5", True)
+x = []
+y_quad = []
+y_pegasos = []
+for pos, neg in [("1","7"),("02","13"),("024","135"),("0246","1357"),("02468","13579"),("012468","123579"),("0123468","1234579")]:
+    gamma = 1.0
+    
+    x_train, y_train, x_val, y_val, x_test, y_test = load_data(pos, neg, True)
+    x += [x_train.shape[0]]
 
-dx = 20
-dy = 20
-cs = np.linspace(1e-8, 100.0, num=dx)
-gammas = np.linspace(1e-8, 10.0, num=dy)
-train_acc = np.zeros((dy, dx))
-test_acc = np.zeros((dy, dx))
-val_acc = np.zeros((dy, dx))
+    start = time.time()
+    svm = QuadSVM(C=1.0, kernel=make_gaussian_kernel(gamma))
+    svm.fit(x_train, y_train)
+    y_quad += [time.time() - start]
+    print(svm.score(x_train, y_train), svm.score(x_val, y_val), svm.score(x_test, y_test))
 
-for i, C in enumerate(cs):
-    for j, gamma in enumerate(gammas):
-        svm = PegasosSVM(L=1.0/C, kernel=make_gaussian_kernel(gamma))
-        svm = QuadSVM(C=C, kernel=make_gaussian_kernel(gamma))
-        svm = SVC(C=C,gamma=gamma)
-        svm.fit(x_train, y_train)
-        print(sum(svm.n_support_))
-
-        train_acc[j][i] = svm.score(x_train, y_train)
-        test_acc[j][i] = svm.score(x_test, y_test)
-        val_acc[j][i] = svm.score(x_val, y_val)
-
-        print(i, j, C, gamma)
-        print("SVM Train", train_acc[j][i])
-        print("SVM Test", test_acc[j][i])
-        print("SVM Val", val_acc[j][i])
-        print("")
+    start = time.time()
+    svm = PegasosSVM(L=1.0, kernel=make_gaussian_kernel(gamma))
+    svm.fit(x_train, y_train)
+    y_pegasos += [time.time() - start]
+    print(svm.score(x_train, y_train), svm.score(x_val, y_val), svm.score(x_test, y_test))
+    
+    print("")
 
 plt.figure()
-cs, gammas = np.meshgrid(cs, gammas)
-cs = plt.contourf(cs, gammas, test_acc)
-plt.xlabel("C")
-plt.ylabel("gamma")
-plt.colorbar(cs)
+plt.plot(x, y_quad, label="QP (cvxopt)")
+plt.plot(x, y_pegasos, label="Pegasos")
+plt.ylabel("time (s)")
+plt.xlabel("# data points")
+plt.legend(loc="top right")
 plt.show()
-
-"""
-result = svm.predict(x_test) * y_test > 0
-for i in range(len(result)):
-    if not result[i]:
-        image = x_test[i,:].reshape(28,28)
-        plt.figure(1, figsize=(3, 3))
-        if y_test[i] > 0:
-            plt.title("Positive")
-        else:
-            plt.title("Negative")
-        plt.imshow(image, cmap=plt.cm.gray_r, interpolation='nearest')
-        plt.show()
-"""
