@@ -43,11 +43,11 @@ def load_data(pos, neg, normalize=False):
 x = []
 y_quad = []
 y_pegasos = []
-for pos, neg in [("1","7"),("02","13"),("024","135"),("0246","1357"),("02468","13579"),("012468","123579"),("0123468","1234579")]:
+for pos, neg in [("1","7"),("02","13"),("024","135"),("0246","1357"),("02468","13579"),("012468","123579")]:
     gamma = 1.0
     
     x_train, y_train, x_val, y_val, x_test, y_test = load_data(pos, neg, True)
-    x += [x_train.shape[0]]
+    x += [x_train.shape[0]//2]
 
     start = time.time()
     svm = QuadSVM(C=1.0, kernel=make_gaussian_kernel(gamma))

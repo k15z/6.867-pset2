@@ -14,7 +14,7 @@ from plotBoundary import plotDecisionBoundary
 from sklearn.linear_model import LogisticRegression
 
 # load data from csv files
-dataset_id = "3"
+dataset_id = "1"
 
 train = np.loadtxt('data/data' + dataset_id + '_train.csv')
 x_train, y_train = train[:,0:2], train[:,2:3]
@@ -34,7 +34,7 @@ def evaluate_model(penalty, my_lambda):
     err_val = 1.0 - lr.score(x_val, y_val)
     def predictLR(x):
         return lr.predict(np.array([x]))
-    return (lr.coef_, predictLR, err_train, err_test, err_val)
+    return (lr.coef_, lr.intercept_, predictLR, err_train, err_test, err_val)
 
 # Plot norm of weight vector vs number of iterations
 x = []
@@ -49,19 +49,21 @@ err_vals_l2 = []
 for my_lambda in np.linspace(1e-50, 20.0, num=41):
     x += [my_lambda]
     
-    weights, predictLR, err_train, err_test, err_val = evaluate_model('l1', my_lambda)
+    weights, intercept, predictLR, err_train, err_test, err_val = evaluate_model('l1', my_lambda)
     norm_weights_l1 += [np.linalg.norm(weights)]
     err_trains_l1 += [err_train]
     err_tests_l1 += [err_test]
     err_vals_l1 += [err_val]
+    print(weights, intercept)
     print("L1", my_lambda, err_train, err_test, err_val)
 #    plotDecisionBoundary(x_train, y_train, predictLR, [0.5], title = 'L1, $\lambda = ' + str(my_lambda) + '$')
     
-    weights, predictLR, err_train, err_test, err_val = evaluate_model('l2', my_lambda)
+    weights, intercept, predictLR, err_train, err_test, err_val = evaluate_model('l2', my_lambda)
     norm_weights_l2 += [np.linalg.norm(weights)]
     err_trains_l2 += [err_train]
     err_tests_l2 += [err_test]
     err_vals_l2 += [err_val]
+    print(weights, intercept)
     print("L2", my_lambda, err_train, err_test, err_val)
 #    plotDecisionBoundary(x_train, y_train, predictLR, [0.5], title = 'L2, $\lambda = ' + str(my_lambda) + '$')
 
